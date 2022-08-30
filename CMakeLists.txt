@@ -66,7 +66,11 @@ find_package(catkin REQUIRED COMPONENTS
 #   Action1.action
 #   Action2.action
 DIRECTORY action
-FILES ur_onrobot.action
+FILES 
+close_to_force.action
+close_until_touch.action
+move_to_width.action
+open_gripper.action
 )
 
 ## Generate added messages and services with any dependencies listed here
