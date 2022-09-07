@@ -112,7 +112,7 @@ open_gripper.action
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES onrobot_ros
-  CATKIN_DEPENDS rospy std_msgs actionlib_msgs
+  CATKIN_DEPENDS rospy std_msgs actionlib_msgs message_runtime
 #  DEPENDS system_lib
 )
 
