@@ -15,6 +15,7 @@ class ur_onrobot(object):
     _result = GripperCommandActionResult()
     _feedback = GripperCommandActionFeedback()
     _variables = None
+    _deviceName = ''
 
     def __init__(self, name):
 
@@ -31,12 +32,13 @@ class ur_onrobot(object):
                 'onrobot_gripper_action', GripperCommandAction, execute_cb=self.execute_cb, auto_start=False)
             self._server.start()
 
-            gripper = json.loads(self._rpc_server.get_discovery())[
+            self._deviceName = json.loads(self._rpc_server.get_discovery())[
                 "devices"][0]["deviceName"]
-            if gripper != '2FG7':
+            
+            if self._deviceName != '2FG7':
                 rospy.logerr('Gripper not yet supported')
                 rospy.signal_shutdown()
-            rospy.loginfo("Connected to Gripper " + gripper + ' - READY')
+            rospy.loginfo("Connected to Gripper " + self._deviceName + ' - READY')
 
             self._rpc_server.twofg_set_fingertip_offset(0, 0.0)
             self._variables = self._rpc_server.twofg_get_all_variables(0)
@@ -70,9 +72,17 @@ class ur_onrobot(object):
                          self._variables['min_internal_width'], self._variables['max_internal_width'])
             return
 
-        rospy.loginfo("Moving gripper")
+        rospy.loginfo("Moving Gripper")
 
-        self._server.set_succeeded(self._result)
+        self._rpc_server.twofg_grip_internal(0, goal.command.position, int(goal.command.max_effort), 70)
+        rospy.sleep(1.0)
+        feedback = self._rpc_server.twofg_get_all_variables(0)
+        if feedback['grip_detected'] or (abs(feedback['internal_width']-goal.command.position) < 1.0):
+            rospy.loginfo('Goal Succeded')
+            self._server.set_succeeded()
+        else:
+            rospy.loginfo('Goal Failed')
+            self._server.set_aborted()
         success = True
 
     def update_variables(self):
@@ -81,8 +91,7 @@ class ur_onrobot(object):
         self._pubGrip=rospy.Publisher('gripper_gripped', Bool, queue_size=10)
         rate = rospy.Rate(2)
         jointMsg = JointState()
-        jointMsg.name = [str(json.loads(self._rpc_server.get_discovery())[
-                "devices"][0]["deviceName"])]
+        jointMsg.name = self._deviceName
         rospy.loginfo("Publishing Gripper Status")
         jointMsg.header.frame_id = jointMsg.name[0]
         while not rospy.is_shutdown():
